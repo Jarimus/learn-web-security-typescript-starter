@@ -26,6 +26,7 @@ import {
   storePasskeyCredential,
   updatePasskeyCounter,
   verifyRegistrationResponse,
+  verifyAuthenticationResponse
 } from "../auth/passkeys.ts";
 import { findUserById } from "../auth/users.ts";
 import {
@@ -117,22 +118,30 @@ export function createPasskeyRouter(deps: Dependencies): Router {
       },
     };
 
-    let verification;
-    try {
-      verification = {
-        verified: false,
-        authenticationInfo: {
-          newCounter: passkeyVerificationInput.credential.counter,
-        },
-      };
-    } catch (error) {
-      logEvent("passkey_login_failed", { credentialId, error: String(error) });
-      res
-        .status(401)
-        .type("html")
-        .send(renderPasskeyLoginPage("Passkey verification failed.", returnTo));
-      return;
-    }
+    const verification = await verifyAuthenticationResponse({
+      response: passkeyVerificationInput.response,
+      expectedChallenge: stored.challenge,
+      expectedOrigin: rpOrigin,
+      expectedRPID: rpID,
+      requireUserVerification: true,
+      credential: passkeyVerificationInput.credential
+    });
+    
+    // try {
+    //   verification = {
+    //     verified: false,
+    //     authenticationInfo: {
+    //       newCounter: passkeyVerificationInput.credential.counter,
+    //     },
+    //   };
+    // } catch (error) {
+    //   logEvent("passkey_login_failed", { credentialId, error: String(error) });
+    //   res
+    //     .status(401)
+    //     .type("html")
+    //     .send(renderPasskeyLoginPage("Passkey verification failed.", returnTo));
+    //   return;
+    // }
 
     if (!verification.verified) {
       logEvent("passkey_login_failed", { credentialId });
