@@ -64,6 +64,13 @@ export function createApp(deps: Dependencies): express.Express {
     express.static("node_modules/@simplewebauthn/browser/dist/bundle"),
   );
 
+  app.get("/.well-known/security.txt", (_req, res) => {
+    res.type("text/plain");
+    res.send(`Contact: mailto:security@bearlysecure.example
+Policy: https://bearlysecure.example/security-policy
+Expires: 2027-02-06T00:00:00.000Z`)
+  })
+
   app.use(express.urlencoded({ extended: false }));
   app.use(express.json());
   app.use(createPawPalRouter(deps));
