@@ -118,30 +118,24 @@ export function createPasskeyRouter(deps: Dependencies): Router {
       },
     };
 
-    const verification = await verifyAuthenticationResponse({
-      response: passkeyVerificationInput.response,
-      expectedChallenge: stored.challenge,
-      expectedOrigin: rpOrigin,
-      expectedRPID: rpID,
-      requireUserVerification: true,
-      credential: passkeyVerificationInput.credential
-    });
-    
-    // try {
-    //   verification = {
-    //     verified: false,
-    //     authenticationInfo: {
-    //       newCounter: passkeyVerificationInput.credential.counter,
-    //     },
-    //   };
-    // } catch (error) {
-    //   logEvent("passkey_login_failed", { credentialId, error: String(error) });
-    //   res
-    //     .status(401)
-    //     .type("html")
-    //     .send(renderPasskeyLoginPage("Passkey verification failed.", returnTo));
-    //   return;
-    // }
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response: passkeyVerificationInput.response,
+        expectedChallenge: stored.challenge,
+        expectedOrigin: rpOrigin,
+        expectedRPID: rpID,
+        requireUserVerification: true,
+        credential: passkeyVerificationInput.credential
+      });
+    } catch (error) {
+      logEvent("passkey_login_failed", { credentialId, error: String(error) });
+      res
+        .status(401)
+        .type("html")
+        .send(renderPasskeyLoginPage("Passkey verification failed.", returnTo));
+      return;
+    }
 
     if (!verification.verified) {
       logEvent("passkey_login_failed", { credentialId });
