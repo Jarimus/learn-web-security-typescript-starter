@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Dependencies } from "../dependencies.ts";
+import { hasRole } from "../auth/accessControl.ts";
 import { readTaxDocument } from "../uploads/taxDocuments.ts";
 import { requireAuth, requireRole } from "../auth/accessControl.ts";
 import { sendErrorPage } from "../errors.ts";
@@ -27,7 +28,7 @@ export function createFilesRouter(deps: Dependencies): Router {
     }
 
     const file = findUploadedFileById(db, fileId);
-    if (!file) {
+    if (!file || (file.user_id != current.user.id && hasRole(current, "customer"))) {
       sendErrorPage(res, 404, "File Not Found", "We couldn't find that file.");
       return;
     }

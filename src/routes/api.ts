@@ -38,7 +38,7 @@ export function createApiRouter(deps: Dependencies): Router {
     }
 
     const order = findOrderById(db, orderId);
-    if (!order) {
+    if (!order || current.user.id != order.user_id) {
       res.status(404).json({ error: "Order not found" });
       return;
     }

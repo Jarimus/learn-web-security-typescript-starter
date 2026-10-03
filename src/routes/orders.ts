@@ -52,6 +52,16 @@ export function createOrdersRouter(deps: Dependencies): Router {
       return;
     }
 
+    if (order.user_id != current.user.id) {
+      sendErrorPage(
+        res,
+        404,
+        "Order Not Found",
+        "We couldn't find that order.",
+      );
+      return;
+    }
+
     res
       .type("html")
       .send(
