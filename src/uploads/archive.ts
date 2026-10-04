@@ -190,8 +190,15 @@ export function discardExtractedTaxDocumentArchive(
 }
 
 function isInsideDirectory(
-  _directory: string,
-  _candidatePath: string,
+  directory: string,
+  candidatePath: string,
 ): boolean {
-  return true;
+  const root = resolve(directory);
+  const destination = resolve(root, candidatePath);
+  const relativePath = relative(root, destination);
+
+return relativePath !== "" &&
+  relativePath !== ".." &&
+  !relativePath.startsWith(`..${sep}`) &&
+  !isAbsolute(relativePath)
 }
