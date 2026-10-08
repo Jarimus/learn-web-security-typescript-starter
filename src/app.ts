@@ -1,4 +1,4 @@
-import express, { type RequestHandler } from "express";
+import express, { type Response} from "express";
 import { validateRequestOrigin } from "./csrf.ts";
 import type { Dependencies } from "./dependencies.ts";
 import { errorHandler, sendErrorPage } from "./errors.ts";
