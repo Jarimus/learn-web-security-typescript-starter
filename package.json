@@ -12,7 +12,8 @@
     "lint": "oxfmt --check && oxlint",
     "lint:fix": "npm run format && oxlint --fix",
     "start": "node --env-file-if-exists=.env src/main.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "audit:security": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@simplewebauthn/browser": "^13.3.0",
@@ -32,7 +33,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.1",
     "@types/qrcode": "^1.5.6",
-    "oxfmt": "^0.60.0",
+    "oxfmt": "^0.72.0",
     "oxlint": "^1.75.0",
     "typescript": "^7.0.2",
     "yaml": "^2.9.1"
