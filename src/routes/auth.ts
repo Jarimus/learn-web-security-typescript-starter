@@ -81,7 +81,7 @@ export function createAuthRouter(deps: Dependencies): Router {
       req.query.verification === "restart"
         ? VERIFICATION_RESTART_MESSAGE
         : undefined;
-    res.type("html").send(renderLoginPage(error, returnTo));
+    res.type("html").send(renderLoginPage(error, safeReturnTo(returnTo)));
   });
 
   router.get("/login/totp", (req, res) => {
@@ -204,7 +204,7 @@ export function createAuthRouter(deps: Dependencies): Router {
       res
         .status(401)
         .type("html")
-        .send(renderLoginPage("Invalid email or password", returnTo));
+        .send(renderLoginPage("Invalid email or password", safeReturnTo(returnTo)));
       return;
     }
 
@@ -212,7 +212,7 @@ export function createAuthRouter(deps: Dependencies): Router {
     abandonTotpLoginChallenge(db, req.header("cookie"));
 
     if (user.has_totp) {
-      const challenge = createTotpLoginChallenge(db, user.id, returnTo);
+      const challenge = createTotpLoginChallenge(db, user.id, safeReturnTo(returnTo));
       setTotpLoginChallengeCookie(res, challenge);
       res.redirect("/login/totp");
       return;
@@ -234,7 +234,7 @@ export function createAuthRouter(deps: Dependencies): Router {
       clearTotpLoginChallengeCookie(res);
     }
 
-    res.redirect(returnTo);
+    res.redirect(safeReturnTo(returnTo));
   });
 
   router.post("/login/totp/cancel", (req, res) => {
@@ -251,7 +251,7 @@ export function createAuthRouter(deps: Dependencies): Router {
       : undefined;
     if (!challengeToken || !challenge) {
       clearTotpLoginChallengeCookie(res);
-      res.redirect(verificationRestartLoginPath(requestedReturnTo));
+      res.redirect(verificationRestartLoginPath(safeReturnTo(requestedReturnTo)));
       return;
     }
 
@@ -511,7 +511,7 @@ export function createAuthRouter(deps: Dependencies): Router {
     const params = new URLSearchParams({ verification: "restart" });
     const returnPath = String(returnTo);
     if (returnPath !== "/") {
-      params.set("returnTo", returnPath);
+      params.set("returnTo", safeReturnTo(returnPath));
     }
     return `/login?${params}`;
   }
