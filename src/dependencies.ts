@@ -15,6 +15,7 @@ export type Dependencies = {
   keyring: Keyring | undefined;
   db: DatabaseSync;
   pawPalApiKey: string;
+  trustedProxyHops: number;
 };
 
 function parseNonNegativeInteger(value: string, name: string): number {
@@ -52,7 +53,8 @@ export function initDependencies(
     maxPublicProductResults: 50,
     downloadSigningKey: Buffer.from(requireEnv("DOWNLOAD_SIGNING_KEY"), "hex"),
     keyring: loadOptionalKeyring(env),
-    pawPalApiKey: requireEnv("PAWPAL_API_KEY")
+    pawPalApiKey: requireEnv("PAWPAL_API_KEY"),
+    trustedProxyHops: parseNonNegativeInteger(env.TRUST_PROXY_HOPS ?? "0", "trusted proxy hops")
   };
 
   return { ...values, db: openDatabase(values.databasePath) };
