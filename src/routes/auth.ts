@@ -4,6 +4,7 @@ import { safeReturnTo } from "../auth/accessControl.ts";
 import {
   hashPassword,
   MAX_PASSWORD_LENGTH,
+  passwordNeedsRehash,
   verifyPassword,
 } from "../auth/passwords.ts";
 import {
@@ -39,6 +40,7 @@ import {
   findUserById,
   getTotpSecret,
   normalizeEmail,
+  updateUserPassword,
 } from "../auth/users.ts";
 import {
   renderLoginPage,
@@ -174,6 +176,10 @@ export function createAuthRouter(deps: Dependencies): Router {
     const session = createSession(db, user.id);
     recordRecoveryAttempt(db, user.email, user.id, true);
 
+    if (passwordNeedsRehash(user.password_hash)) {
+      await updateUserPassword(db, user.id, password);
+    }
+
     logEvent("mfa_recovery_attempt", {
       email: user.email,
       userId: user.id,
@@ -219,6 +225,10 @@ export function createAuthRouter(deps: Dependencies): Router {
     }
 
     const session = createSession(db, user.id);
+
+    if (passwordNeedsRehash(user.password_hash)) {
+      await updateUserPassword(db, user.id, password);
+    }
 
     logAuthenticationEvent(req, res, "login_attempt", {
       email: user.email,
