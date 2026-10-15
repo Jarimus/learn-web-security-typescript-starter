@@ -22,10 +22,20 @@ import { migrateSensitiveDataAtRest } from "./storage/migrations.ts";
 import cors from "cors";
 import helmet from "helmet";
 import { randomBytes } from "node:crypto";
+import { createRateLimiter } from "./security/rateLimit.ts";
 
 export function createApp(deps: Dependencies): express.Express {
   migrateSensitiveDataAtRest(deps.db, deps.keyring);
   const app = express();
+
+  const globalRateLimiter = createRateLimiter({
+    windowSeconds: 60,
+    max: 100,
+  });
+  const productRateLimiter = createRateLimiter({
+    windowSeconds: 60,
+    max: 30
+  });
 
   app.set("trust proxy", deps.trustedProxyHops);
 
@@ -34,6 +44,7 @@ export function createApp(deps: Dependencies): express.Express {
     res.locals.cspNonce = cspNonce;
     next();
   });
+
   app.use(helmet({
       contentSecurityPolicy: {
         directives: {
@@ -55,8 +66,8 @@ export function createApp(deps: Dependencies): express.Express {
       next();
     },
   );
-
-
+  
+  
   app.get("/health", (_req, res) => {
     res.json({ ok: true, app: "bearly-secure" });
   });
@@ -65,6 +76,8 @@ export function createApp(deps: Dependencies): express.Express {
     "/vendor/simplewebauthn",
     express.static("node_modules/@simplewebauthn/browser/dist/bundle"),
   );
+
+  app.use(globalRateLimiter);
 
   app.get("/.well-known/security.txt", (_req, res) => {
     res.type("text/plain");
@@ -77,7 +90,9 @@ Expires: 2027-02-06T00:00:00.000Z`)
   app.use(express.json());
   app.use(createPawPalRouter(deps));
   app.use(validateRequestOrigin(deps.appOrigin));
-  app.use("/api/products", cors({
+  app.use("/api/products",
+      productRateLimiter,
+      cors({
       origin: "*",
       credentials: false,
       methods: ["GET"],

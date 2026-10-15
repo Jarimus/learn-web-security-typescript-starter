@@ -82,12 +82,12 @@ export function encryptStringWithKeyring(
   value: string,
   keyring: Keyring | undefined,
 ): string {
-  const serialiedPayload = serializeEncryptedPayload(encryptWithKeyring(value, keyring));
+  const serialiedPayload = serializeEncryptedPayload(encryptWithKeyring(Buffer.from(value, "utf8"), keyring));
   return serialiedPayload.toString();
 }
 
 export function encryptWithKeyring(
-  value: string,
+  plaintext: Buffer,
   keyring: Keyring | undefined,
 ): VersionedEncryptedPayload {
   const validKeyring = requireKeyring(keyring);
@@ -95,7 +95,7 @@ export function encryptWithKeyring(
   if (!activeKey) {
     throw new Error("no valid active key to encrypt with");
   }
-  const encrypted = encrypt(Buffer.from(value), activeKey);
+  const encrypted = encrypt(plaintext, activeKey);
   return {
     authTag: encrypted.authTag,
     ciphertext: encrypted.ciphertext,
@@ -108,7 +108,7 @@ export function decryptStringWithKeyring(
   value: string,
   keyring: Keyring | undefined,
 ): string {
-  const deserialized = deserializeEncryptedPayload(Buffer.from(value));
+  const deserialized = deserializeEncryptedPayload(Buffer.from(value, "utf-8"));
   const decrypted = decryptWithKeyring(deserialized, keyring);
   return decrypted.toString();
 }

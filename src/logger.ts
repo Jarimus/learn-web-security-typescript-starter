@@ -7,7 +7,14 @@ const REDACTED_KEYS = new Set([
   "resetLink",
   "secret",
   "adminNotes",
-  "storagePath"
+  "storagePath",
+  "email",
+  "shippingName",
+  "shippingAddress",
+  "shippingCity",
+  "shippingRegion",
+  "shippingPostalCode",
+  "originalName"
 ]);
 
 type LogFields = Record<string, unknown>;
