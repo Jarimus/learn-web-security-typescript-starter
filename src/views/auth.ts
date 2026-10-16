@@ -84,6 +84,13 @@ export function renderSignupPage(error?: string): string {
         <label>Email<input name="email" type="email" autocomplete="email" required></label>
         <label>Password<input name="password" type="password" autocomplete="new-password" minlength="${MIN_PASSWORD_LENGTH}" maxlength="${MAX_PASSWORD_LENGTH}" required></label>
         <button type="submit">Create account</button>
+        <label hidden
+          >Leave this field blank<input
+            name="companyWebsite"
+            type="text"
+            tabindex="-1"
+            autocomplete="off"
+        /></label>
       </form>
       <p class="auth-link">Already have an account? <a href="/login">Log in</a>.</p>`,
   );

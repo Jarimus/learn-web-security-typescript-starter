@@ -55,6 +55,7 @@ import {
 import { logEvent } from "../logger.ts";
 import { canonicalEmailKey, createRateLimiter } from "../security/rateLimit.ts";
 import { sendErrorPage } from "../errors.ts";
+import { protectSignupFromBots } from "../security/botRisk.ts";
 
 type AuthenticationLogFields = {
   success: boolean;
@@ -364,67 +365,69 @@ export function createAuthRouter(deps: Dependencies): Router {
       res.redirect(challenge.return_to);
     });
 
-  router.post("/signup", async (req, res) => {
-    if (getCurrentSession(db, req.header("cookie"))) {
+  router.post("/signup",
+    protectSignupFromBots,
+    async (req, res) => {
+      if (getCurrentSession(db, req.header("cookie"))) {
+        res.redirect("/account");
+        return;
+      }
+
+      const email = normalizeEmail(String(req.body.email ?? ""));
+      const displayName = String(req.body.displayName ?? "").trim();
+      const password = String(req.body.password ?? "");
+
+      if (!email || !displayName || !password) {
+        res
+          .status(400)
+          .type("html")
+          .send(renderSignupPage("All fields are required"));
+        return;
+      }
+
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        res
+          .status(400)
+          .type("html")
+          .send(
+            renderSignupPage(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+            ),
+          );
+        return;
+      }
+
+      if (password.length > MAX_PASSWORD_LENGTH) {
+        res
+          .status(400)
+          .type("html")
+          .send(
+            renderSignupPage(
+              `Password must not exceed ${MAX_PASSWORD_LENGTH} characters`,
+            ),
+          );
+        return;
+      }
+
+      if (findUserByEmail(db, email)) {
+        res
+          .status(409)
+          .type("html")
+          .send(renderSignupPage("An account already exists for that email"));
+        return;
+      }
+
+      const user = await createUser(db, email, displayName, password);
+      const session = createSession(db, user.id);
+
+      const challengeToken = getTotpLoginChallengeToken(req.header("cookie"));
+      abandonTotpLoginChallenge(db, req.header("cookie"));
+      setSessionCookie(res, session);
+      if (challengeToken) {
+        clearTotpLoginChallengeCookie(res);
+      }
+
       res.redirect("/account");
-      return;
-    }
-
-    const email = normalizeEmail(String(req.body.email ?? ""));
-    const displayName = String(req.body.displayName ?? "").trim();
-    const password = String(req.body.password ?? "");
-
-    if (!email || !displayName || !password) {
-      res
-        .status(400)
-        .type("html")
-        .send(renderSignupPage("All fields are required"));
-      return;
-    }
-
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      res
-        .status(400)
-        .type("html")
-        .send(
-          renderSignupPage(
-            `Password must be at least ${MIN_PASSWORD_LENGTH} characters`,
-          ),
-        );
-      return;
-    }
-
-    if (password.length > MAX_PASSWORD_LENGTH) {
-      res
-        .status(400)
-        .type("html")
-        .send(
-          renderSignupPage(
-            `Password must not exceed ${MAX_PASSWORD_LENGTH} characters`,
-          ),
-        );
-      return;
-    }
-
-    if (findUserByEmail(db, email)) {
-      res
-        .status(409)
-        .type("html")
-        .send(renderSignupPage("An account already exists for that email"));
-      return;
-    }
-
-    const user = await createUser(db, email, displayName, password);
-    const session = createSession(db, user.id);
-
-    const challengeToken = getTotpLoginChallengeToken(req.header("cookie"));
-    abandonTotpLoginChallenge(db, req.header("cookie"));
-    setSessionCookie(res, session);
-    if (challengeToken) {
-      clearTotpLoginChallengeCookie(res);
-    }
-
-    res.redirect("/account");
   });
 
   router.post("/logout", (req, res) => {

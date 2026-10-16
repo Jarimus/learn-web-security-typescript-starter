@@ -23,6 +23,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { randomBytes } from "node:crypto";
 import { createRateLimiter } from "./security/rateLimit.ts";
+import { createLoadShedder } from "./security/loadShedding.ts";
 
 export function createApp(deps: Dependencies): express.Express {
   migrateSensitiveDataAtRest(deps.db, deps.keyring);
@@ -36,6 +37,10 @@ export function createApp(deps: Dependencies): express.Express {
     windowSeconds: 60,
     max: 30
   });
+  const globalLoadShedder = createLoadShedder({
+    maxConcurrent: 50,
+    retryAfterSeconds: 1
+  })
 
   app.set("trust proxy", deps.trustedProxyHops);
 
@@ -77,6 +82,7 @@ export function createApp(deps: Dependencies): express.Express {
     express.static("node_modules/@simplewebauthn/browser/dist/bundle"),
   );
 
+  app.use(globalLoadShedder);
   app.use(globalRateLimiter);
 
   app.get("/.well-known/security.txt", (_req, res) => {

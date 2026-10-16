@@ -11,6 +11,8 @@ import {
 import { listPublicProducts, type Product } from "../products.ts";
 import { findApiKey } from "../auth/apiKeys.ts"
 import { type Order } from "../orders/index.ts";
+import { consumeApiKeyQuota } from "../auth/apiKeyUsage.ts";
+import { sendApiKeyQuotaExhausted, setApiKeyQuotaHeaders, toApiKeyQuotaResponse } from "./apiKeyQuota.ts";
 
 type ProductResponse = {
   id: number;
@@ -85,6 +87,12 @@ export function createApiRouter(deps: Dependencies): Router {
       res.status(403).json({ error: "unauthorized scope for api key"});
       return;
     }
+    const quota = consumeApiKeyQuota(db, dbApiKey.id);
+    if (!quota.allowed) {
+      sendApiKeyQuotaExhausted(res, quota);
+      return
+    }
+    setApiKeyQuotaHeaders(res, quota);
     const orders = listAllOrders(db).map((order) => ({
       id: order.id,
       status: order.status,
@@ -95,6 +103,7 @@ export function createApiRouter(deps: Dependencies): Router {
     res.json({
       integration: "Warehouse Fulfillment Integration",
       orders,
+      quota: toApiKeyQuotaResponse(quota)
     });
   });
 
