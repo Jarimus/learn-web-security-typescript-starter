@@ -86,8 +86,8 @@ Policy: https://bearlysecure.example/security-policy
 Expires: 2027-02-06T00:00:00.000Z`)
   })
 
-  app.use(express.urlencoded({ extended: false }));
-  app.use(express.json());
+  app.use(express.urlencoded({ extended: false, limit: deps.maxRequestBodyBytes }));
+  app.use(express.json({ limit: deps.maxRequestBodyBytes }));
   app.use(createPawPalRouter(deps));
   app.use(validateRequestOrigin(deps.appOrigin));
   app.use("/api/products",
