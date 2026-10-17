@@ -21,7 +21,7 @@ import { createSupportRouter } from "./routes/support.ts";
 import { migrateSensitiveDataAtRest } from "./storage/migrations.ts";
 import cors from "cors";
 import helmet from "helmet";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUIDv7 } from "node:crypto";
 import { createRateLimiter } from "./security/rateLimit.ts";
 import { createLoadShedder } from "./security/loadShedding.ts";
 
@@ -43,6 +43,13 @@ export function createApp(deps: Dependencies): express.Express {
   })
 
   app.set("trust proxy", deps.trustedProxyHops);
+
+  app.use((_req, res, next) => {
+    const requestId = randomUUIDv7();
+    res.set("X-Request-ID", requestId);
+    res.locals.requestId = requestId;
+    next();
+  })
 
   app.use((_req, res, next) => {
     const cspNonce = randomBytes(16).toString("base64");
